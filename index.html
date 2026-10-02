@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="DuoBills">
+    
     <title>DuoBills - Shared Household Bill Manager</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,6 +19,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome for crisp modern icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs (Compat Version for standalone index.html) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -63,9 +69,7 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo & Household Selector -->
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-                        <i class="fa-solid font-bold fa-file-invoice-dollar text-xl"></i>
-                    </div>
+                    <img src="https://github.com/jbeas408/bill-tracker/blob/main/Code_Generated_Image.png?raw=true" alt="DuoBills Logo" class="w-10 h-10 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 object-cover">
                     <div>
                         <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">DuoBills</span>
                         <span class="hidden sm:inline-block text-xs text-slate-400 dark:text-slate-500 ml-2 border-l border-slate-300 dark:border-slate-700 pl-2">Jason & Angela's Household</span>
@@ -497,7 +501,24 @@
     </div>
 
     <script>
-        // Default Mock Data for Household Bills
+        // -------------------------------------------------------------
+        // FIREBASE INITIALIZATION - REPLACE WITH YOUR FIREBASE CONFIG
+        // -------------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5rjhYtdjdJgnVkpg0gEu-er1gVRNVohc",
+            authDomain: "duobills-8e986.firebaseapp.com",
+            databaseURL: "https://duobills-8e986-default-rtdb.firebaseio.com",
+            projectId: "duobills-8e986",
+            storageBucket: "duobills-8e986.firebasestorage.app",
+            messagingSenderId: "703824119542",
+            appId: "1:703824119542:web:74e9caab089e8ad8dfced7"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref('household_bills');
+
+        // Default Starter Data (Used if database is completely empty)
         const DEFAULT_BILLS = [
             {
                 id: 'bill-1',
@@ -517,7 +538,7 @@
                 partner: 'Jason',
                 category: 'Utilities',
                 amount: 145.50,
-                dueDay: 2, // Due Today in mock scenario
+                dueDay: 2,
                 paid: false,
                 paidTimestamp: null,
                 autoPay: true,
@@ -529,7 +550,7 @@
                 partner: 'Angela',
                 category: 'Internet/Phone',
                 amount: 85.00,
-                dueDay: 3, // Due Tomorrow
+                dueDay: 3,
                 paid: false,
                 paidTimestamp: null,
                 autoPay: true,
@@ -546,66 +567,39 @@
                 paidTimestamp: null,
                 autoPay: false,
                 notes: 'Geico Policy #8821'
-            },
-            {
-                id: 'bill-5',
-                title: 'Chase Sapphire Credit Card Min',
-                partner: 'Jason',
-                category: 'Credit Card',
-                amount: 150.00,
-                dueDay: 18,
-                paid: false,
-                paidTimestamp: null,
-                autoPay: false,
-                notes: 'Jason primary card'
-            },
-            {
-                id: 'bill-6',
-                title: 'Streaming Bundle (Netflix/Hulu)',
-                partner: 'Angela',
-                category: 'Subscriptions',
-                amount: 34.99,
-                dueDay: 25,
-                paid: false,
-                paidTimestamp: null,
-                autoPay: true,
-                notes: 'Charged to Angela AMEX'
             }
         ];
 
         // Global State Variables
         let bills = [];
-        let activePartnerFilter = 'all'; // 'all', 'Jason', 'Angela', 'Shared'
+        let activePartnerFilter = 'all';
         let currentTab = 'dashboard';
         let categoryChartInstance = null;
 
-        // Current simulated date context for October 2026
-        const TODAY_DAY = 2; // Simulated current day of month (October 2nd)
+        // Current simulated date context
+        const TODAY_DAY = new Date().getDate(); 
 
-        // Initialize Application
+        // Listen for Realtime Firebase Database Updates
         window.onload = function() {
-            loadSavedBills();
-            checkFirstOfMonthPrompt();
-            renderAll();
-        };
-
-        // Load bills from LocalStorage or initialize default
-        function loadSavedBills() {
-            const stored = localStorage.getItem('duobills_data_v1');
-            if (stored) {
-                try {
-                    bills = JSON.parse(stored);
-                } catch(e) {
+            db.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    bills = Object.values(data);
+                } else {
+                    // Seed database with starter data if empty
+                    const initialMap = {};
+                    DEFAULT_BILLS.forEach(b => { initialMap[b.id] = b; });
+                    db.set(initialMap);
                     bills = [...DEFAULT_BILLS];
                 }
-            } else {
-                bills = [...DEFAULT_BILLS];
-                saveBillsToStorage();
-            }
-        }
+                renderAll();
+            });
+        };
 
-        function saveBillsToStorage() {
-            localStorage.setItem('duobills_data_v1', JSON.stringify(bills));
+        function saveBillsToCloud() {
+            const billsMap = {};
+            bills.forEach(b => { billsMap[b.id] = b; });
+            db.set(billsMap);
         }
 
         // View Switcher: Dashboard, Calendar, Settle Up
@@ -615,7 +609,6 @@
             document.getElementById('calendar-tab').classList.toggle('hidden', tab !== 'calendar');
             document.getElementById('settle-tab').classList.toggle('hidden', tab !== 'settle');
 
-            // Style Tab Buttons
             ['dashboard', 'calendar', 'settle'].forEach(t => {
                 const btn = document.getElementById(`nav-${t}`);
                 if (t === tab) {
@@ -671,16 +664,10 @@
             const category = document.getElementById('category-filter').value;
 
             return bills.filter(b => {
-                // Partner filter
                 if (activePartnerFilter !== 'all' && b.partner !== activePartnerFilter) return false;
-                
-                // Search query
                 if (search && !b.title.toLowerCase().includes(search)) return false;
-
-                // Category filter
                 if (category !== 'all' && b.category !== category) return false;
 
-                // Status filter
                 if (status === 'paid' && !b.paid) return false;
                 if (status === 'pending' && b.paid) return false;
                 if (status === 'overdue' && (b.paid || b.dueDay >= TODAY_DAY)) return false;
@@ -738,7 +725,6 @@
             const paidPct = total > 0 ? (paid / total) * 100 : 0;
             document.getElementById('stat-paid-progress').style.width = `${paidPct}%`;
 
-            // Partner breakdown calculation
             const householdSum = totalJason + totalAngela + totalShared || 1;
             document.getElementById('split-Jason-val').innerText = `$${totalJason.toFixed(0)}`;
             document.getElementById('split-Angela-val').innerText = `$${totalAngela.toFixed(0)}`;
@@ -748,7 +734,6 @@
             document.getElementById('split-bar-Angela').style.width = `${(totalAngela / householdSum) * 100}%`;
             document.getElementById('split-bar-shared').style.width = `${(totalShared / householdSum) * 100}%`;
 
-            // Urgent Banner Alert Logic
             const urgentBanner = document.getElementById('urgent-alert-banner');
             const urgentAlertText = document.getElementById('urgent-alert-text');
             
@@ -771,7 +756,6 @@
 
             let filtered = getFilteredBills();
 
-            // Apply Sorting
             const sortVal = document.getElementById('sort-select').value;
             filtered.sort((a, b) => {
                 if (sortVal === 'dueDay-asc') return a.dueDay - b.dueDay;
@@ -790,7 +774,6 @@
             }
             emptyState.classList.add('hidden');
 
-            // Render Desktop Table Rows
             tableBody.innerHTML = filtered.map(bill => {
                 const badge = getStatusBadgeHTML(bill);
                 const partnerBadge = getPartnerBadgeHTML(bill.partner);
@@ -804,7 +787,7 @@
                         </td>
                         <td class="py-3 px-4">${partnerBadge}</td>
                         <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
-                            Oct ${bill.dueDay}, 2026
+                            Day ${bill.dueDay}
                         </td>
                         <td class="py-3 px-4 text-right font-black text-slate-900 dark:text-white">
                             $${bill.amount.toFixed(2)}
@@ -827,7 +810,6 @@
                 `;
             }).join('');
 
-            // Render Mobile Cards
             mobileContainer.innerHTML = filtered.map(bill => {
                 const badge = getStatusBadgeHTML(bill);
                 const partnerBadge = getPartnerBadgeHTML(bill.partner);
@@ -842,7 +824,7 @@
                             </div>
                             <div class="text-right">
                                 <div class="text-lg font-black text-slate-900 dark:text-white">$${bill.amount.toFixed(2)}</div>
-                                <div class="text-xs text-slate-400">Due Oct ${bill.dueDay}</div>
+                                <div class="text-xs text-slate-400">Due Day ${bill.dueDay}</div>
                             </div>
                         </div>
 
@@ -865,7 +847,6 @@
             }).join('');
         }
 
-        // Helper Badge Generators
         function getStatusBadgeHTML(bill) {
             if (bill.paid) {
                 return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"><i class="fa-solid fa-check-double mr-1.5"></i> Paid</span>`;
@@ -897,15 +878,13 @@
             if (bill) {
                 bill.paid = !bill.paid;
                 bill.paidTimestamp = bill.paid ? new Date().toLocaleString() : null;
-                saveBillsToStorage();
-                renderAll();
+                saveBillsToCloud();
             }
         }
 
         function deleteBill(id) {
             bills = bills.filter(b => b.id !== id);
-            saveBillsToStorage();
-            renderAll();
+            db.child(id).remove();
         }
 
         function openBillModal(id = null) {
@@ -950,7 +929,6 @@
             const notes = document.getElementById('bill-notes').value;
 
             if (id) {
-                // Update Existing
                 const bill = bills.find(b => b.id === id);
                 if (bill) {
                     bill.title = title;
@@ -962,7 +940,6 @@
                     bill.notes = notes;
                 }
             } else {
-                // Create New Bill
                 const newBill = {
                     id: 'bill-' + Date.now(),
                     title,
@@ -978,13 +955,8 @@
                 bills.push(newBill);
             }
 
-            saveBillsToStorage();
+            saveBillsToCloud();
             closeBillModal();
-            renderAll();
-        }
-
-        function checkFirstOfMonthPrompt() {
-            // Auto open prompt if explicitly requested or on month change simulation
         }
 
         function openMonthlyReviewModal() {
@@ -1022,16 +994,14 @@
                     if (amountInput) b.amount = parseFloat(amountInput.value) || b.amount;
                 }
             });
-            saveBillsToStorage();
+            saveBillsToCloud();
             closeMonthlyReviewModal();
-            renderAll();
         }
 
         function renderCalendarView() {
             const grid = document.getElementById('calendar-days-grid');
             grid.innerHTML = '';
 
-            // Generate 31 days for current month view
             for (let day = 1; day <= 31; day++) {
                 const dayBills = bills.filter(b => b.dueDay === day && (activePartnerFilter === 'all' || b.partner === activePartnerFilter));
                 const isToday = day === TODAY_DAY;
@@ -1047,7 +1017,7 @@
                         </div>
                         <div class="space-y-1 my-1 overflow-y-auto max-h-12">
                             ${dayBills.map(b => `
-                                <div onclick="openBillModal('${b.id}')" title="${b.title} - $${b.amount}" class="truncate text-[10px] font-semibold px-1 py-0.5 rounded cursor-pointer ${b.paid ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'}">
+                                <div onclick="openBillModal('${b.id}')" title="${b.title} -$${b.amount}" class="truncate text-[10px] font-semibold px-1 py-0.5 rounded cursor-pointer ${b.paid ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'}">
                                     ${b.title} ($${b.amount.toFixed(0)})
                                 </div>
                             `).join('')}
@@ -1058,12 +1028,10 @@
         }
 
         function renderSettleUpAnalytics() {
-            // Settle up calculations for shared expenses paid so far
             let JasonPaidShared = 0;
             let AngelaPaidShared = 0;
 
             bills.filter(b => b.partner === 'Shared' && b.paid).forEach(b => {
-                // In full setup, track paidBy user. Here we estimate half/half setup or Jason paid electric
                 JasonPaidShared += b.amount / 2;
                 AngelaPaidShared += b.amount / 2;
             });
@@ -1083,7 +1051,6 @@
                 </div>
             `;
 
-            // Chart Rendering
             renderCategoryChart();
         }
 
@@ -1163,7 +1130,7 @@
                         <span class="text-xs font-bold text-slate-900 dark:text-white">$${b.amount.toFixed(2)}</span>
                     </div>
                     <p class="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                        <i class="fa-solid fa-clock mr-1"></i> Due Day: Oct ${b.dueDay} (${b.partner})
+                        <i class="fa-solid fa-clock mr-1"></i> Due Day: ${b.dueDay} (${b.partner})
                     </p>
                     <button onclick="togglePaid('${b.id}'); toggleNotificationDrawer();" class="mt-2 w-full py-1 text-[11px] bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition">
                         Mark as Paid Now
@@ -1172,7 +1139,6 @@
             `).join('');
         }
 
-        // Utility Helper
         function escapeHtml(str) {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
