@@ -128,11 +128,11 @@
                 <button id="filter-partner-all" onclick="setPartnerFilter('all')" class="px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm">
                     <i class="fa-solid fa-people-roof mr-1.5"></i> All Household
                 </button>
-                <button id="filter-partner-alex" onclick="setPartnerFilter('Alex')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
-                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1.5"></span> Alex's Bills
+                <button id="filter-partner-Jason" onclick="setPartnerFilter('Jason')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1.5"></span> Jason's Bills
                 </button>
-                <button id="filter-partner-sam" onclick="setPartnerFilter('Sam')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
-                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span> Sam's Bills
+                <button id="filter-partner-Angela" onclick="setPartnerFilter('Angela')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span> Angela's Bills
                 </button>
                 <button id="filter-partner-shared" onclick="setPartnerFilter('Shared')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span> Shared Split
@@ -237,19 +237,19 @@
                     </div>
                     <div>
                         <h4 class="text-sm font-bold">Partner Monthly Split Breakdown</h4>
-                        <p class="text-xs text-slate-500">Alex vs Sam vs Shared Expenses</p>
+                        <p class="text-xs text-slate-500">Jason vs Angela vs Shared Expenses</p>
                     </div>
                 </div>
                 <!-- Mini Progress Breakdown -->
                 <div class="w-full md:w-1/2 flex flex-col gap-1.5">
                     <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        <span class="text-blue-600 dark:text-blue-400">Alex: <span id="split-alex-val">$0</span></span>
-                        <span class="text-purple-600 dark:text-purple-400">Sam: <span id="split-sam-val">$0</span></span>
+                        <span class="text-blue-600 dark:text-blue-400">Jason: <span id="split-Jason-val">$0</span></span>
+                        <span class="text-purple-600 dark:text-purple-400">Angela: <span id="split-Angela-val">$0</span></span>
                         <span class="text-emerald-600 dark:text-emerald-400">Shared: <span id="split-shared-val">$0</span></span>
                     </div>
                     <div class="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full flex overflow-hidden">
-                        <div id="split-bar-alex" class="bg-blue-500 h-full" style="width: 33%"></div>
-                        <div id="split-bar-sam" class="bg-purple-500 h-full" style="width: 33%"></div>
+                        <div id="split-bar-Jason" class="bg-blue-500 h-full" style="width: 33%"></div>
+                        <div id="split-bar-Angela" class="bg-purple-500 h-full" style="width: 33%"></div>
                         <div id="split-bar-shared" class="bg-emerald-500 h-full" style="width: 34%"></div>
                     </div>
                 </div>
@@ -393,8 +393,8 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Assigned Partner *</label>
                         <select id="bill-partner" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="Alex">Alex</option>
-                            <option value="Sam">Sam</option>
+                            <option value="Jason">Jason</option>
+                            <option value="Angela">Angela</option>
                             <option value="Shared">Shared 50/50 Split</option>
                         </select>
                     </div>
@@ -506,7 +506,7 @@
             {
                 id: 'bill-2',
                 title: 'Electric & Power Co',
-                partner: 'Alex',
+                partner: 'Jason',
                 category: 'Utilities',
                 amount: 145.50,
                 dueDay: 2, // Due Today in mock scenario
@@ -518,7 +518,7 @@
             {
                 id: 'bill-3',
                 title: 'High-Speed Fiber Internet',
-                partner: 'Sam',
+                partner: 'Angela',
                 category: 'Internet/Phone',
                 amount: 85.00,
                 dueDay: 3, // Due Tomorrow
@@ -542,32 +542,32 @@
             {
                 id: 'bill-5',
                 title: 'Chase Sapphire Credit Card Min',
-                partner: 'Alex',
+                partner: 'Jason',
                 category: 'Credit Card',
                 amount: 150.00,
                 dueDay: 18,
                 paid: false,
                 paidTimestamp: null,
                 autoPay: false,
-                notes: 'Alex primary card'
+                notes: 'Jason primary card'
             },
             {
                 id: 'bill-6',
                 title: 'Streaming Bundle (Netflix/Hulu)',
-                partner: 'Sam',
+                partner: 'Angela',
                 category: 'Subscriptions',
                 amount: 34.99,
                 dueDay: 25,
                 paid: false,
                 paidTimestamp: null,
                 autoPay: true,
-                notes: 'Charged to Sam AMEX'
+                notes: 'Charged to Angela AMEX'
             }
         ];
 
         // Global State Variables
         let bills = [];
-        let activePartnerFilter = 'all'; // 'all', 'Alex', 'Sam', 'Shared'
+        let activePartnerFilter = 'all'; // 'all', 'Jason', 'Angela', 'Shared'
         let currentTab = 'dashboard';
         let categoryChartInstance = null;
 
@@ -624,7 +624,7 @@
         // Partner Filter Selection
         function setPartnerFilter(partner) {
             activePartnerFilter = partner;
-            ['all', 'alex', 'sam', 'shared'].forEach(p => {
+            ['all', 'Jason', 'Angela', 'shared'].forEach(p => {
                 const btn = document.getElementById(`filter-partner-${p}`);
                 if (p === partner.toLowerCase()) {
                     btn.classList.add('bg-white', 'dark:bg-slate-700', 'text-blue-600', 'dark:text-blue-400', 'shadow-sm', 'font-bold');
@@ -692,13 +692,13 @@
             let overdueCount = 0;
             let urgentCount = 0;
 
-            let totalAlex = 0;
-            let totalSam = 0;
+            let totalJason = 0;
+            let totalAngela = 0;
             let totalShared = 0;
 
             bills.forEach(b => {
-                if (b.partner === 'Alex') totalAlex += b.amount;
-                if (b.partner === 'Sam') totalSam += b.amount;
+                if (b.partner === 'Jason') totalJason += b.amount;
+                if (b.partner === 'Angela') totalAngela += b.amount;
                 if (b.partner === 'Shared') totalShared += b.amount;
             });
 
@@ -731,13 +731,13 @@
             document.getElementById('stat-paid-progress').style.width = `${paidPct}%`;
 
             // Partner breakdown calculation
-            const householdSum = totalAlex + totalSam + totalShared || 1;
-            document.getElementById('split-alex-val').innerText = `$${totalAlex.toFixed(0)}`;
-            document.getElementById('split-sam-val').innerText = `$${totalSam.toFixed(0)}`;
+            const householdSum = totalJason + totalAngela + totalShared || 1;
+            document.getElementById('split-Jason-val').innerText = `$${totalJason.toFixed(0)}`;
+            document.getElementById('split-Angela-val').innerText = `$${totalAngela.toFixed(0)}`;
             document.getElementById('split-shared-val').innerText = `$${totalShared.toFixed(0)}`;
 
-            document.getElementById('split-bar-alex').style.width = `${(totalAlex / householdSum) * 100}%`;
-            document.getElementById('split-bar-sam').style.width = `${(totalSam / householdSum) * 100}%`;
+            document.getElementById('split-bar-Jason').style.width = `${(totalJason / householdSum) * 100}%`;
+            document.getElementById('split-bar-Angela').style.width = `${(totalAngela / householdSum) * 100}%`;
             document.getElementById('split-bar-shared').style.width = `${(totalShared / householdSum) * 100}%`;
 
             // Urgent Banner Alert Logic
@@ -875,11 +875,11 @@
         }
 
         function getPartnerBadgeHTML(partner) {
-            if (partner === 'Alex') {
-                return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Alex</span>`;
+            if (partner === 'Jason') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Jason</span>`;
             }
-            if (partner === 'Sam') {
-                return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>Sam</span>`;
+            if (partner === 'Angela') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>Angela</span>`;
             }
             return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>Shared (50/50)</span>`;
         }
@@ -1051,24 +1051,24 @@
 
         function renderSettleUpAnalytics() {
             // Settle up calculations for shared expenses paid so far
-            let alexPaidShared = 0;
-            let samPaidShared = 0;
+            let JasonPaidShared = 0;
+            let AngelaPaidShared = 0;
 
             bills.filter(b => b.partner === 'Shared' && b.paid).forEach(b => {
-                // In full setup, track paidBy user. Here we estimate half/half setup or Alex paid electric
-                alexPaidShared += b.amount / 2;
-                samPaidShared += b.amount / 2;
+                // In full setup, track paidBy user. Here we estimate half/half setup or Jason paid electric
+                JasonPaidShared += b.amount / 2;
+                AngelaPaidShared += b.amount / 2;
             });
 
             const box = document.getElementById('settlement-summary-box');
             box.innerHTML = `
                 <div class="flex items-center justify-between text-sm pb-2 border-b border-slate-200 dark:border-slate-600">
                     <span class="font-medium text-slate-600 dark:text-slate-300">Total Shared Bills Paid:</span>
-                    <span class="font-bold text-slate-900 dark:text-white">$${(alexPaidShared + samPaidShared).toFixed(2)}</span>
+                    <span class="font-bold text-slate-900 dark:text-white">$${(JasonPaidShared + AngelaPaidShared).toFixed(2)}</span>
                 </div>
                 <div class="flex items-center justify-between text-xs pt-1 text-slate-500">
-                    <span>Alex's 50% Share: <strong>$${alexPaidShared.toFixed(2)}</strong></span>
-                    <span>Sam's 50% Share: <strong>$${samPaidShared.toFixed(2)}</strong></span>
+                    <span>Jason's 50% Share: <strong>$${JasonPaidShared.toFixed(2)}</strong></span>
+                    <span>Angela's 50% Share: <strong>$${AngelaPaidShared.toFixed(2)}</strong></span>
                 </div>
                 <div class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-200 text-xs font-bold text-center">
                     <i class="fa-solid fa-circle-check mr-1"></i> Household expenses are currently balanced equal!
