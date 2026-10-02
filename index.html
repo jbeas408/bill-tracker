@@ -877,10 +877,11 @@ function deleteBill(id) {
     document.getElementById('delete-modal-text').innerText = `Are you sure you want to delete "${title}"?`;
     
     document.getElementById('confirm-delete-btn').onclick = function() {
-        if (billIdToDelete) {
+       if (billIdToDelete) {
             bills = bills.filter(b => b.id !== billIdToDelete);
             db.child(billIdToDelete).remove();
             billIdToDelete = null;
+            renderBillsList();
         }
         closeDeleteModal();
     };
