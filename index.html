@@ -851,9 +851,14 @@
         }
 
         function deleteBill(id) {
-            bills = bills.filter(b => b.id !== id);
-            db.child(id).remove();
-        }
+    const bill = bills.find(b => b.id === id);
+    const title = bill ? bill.title : 'this bill';
+    
+    if (confirm(`Are you sure you want to delete "${title}"?`)) {
+        bills = bills.filter(b => b.id !== id);
+        db.child(id).remove();
+           }
+       }
 
         function openBillModal(id = null) {
             const modal = document.getElementById('bill-modal');
