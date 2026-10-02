@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuoBills - Shared Household Bill Manager</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for crisp modern icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-urgent {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+    <!-- Navigation / Header Bar -->
+    <nav class="sticky top-0 z-30 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo & Household Selector -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                        <i class="fa-solid font-bold fa-file-invoice-dollar text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">DuoBills</span>
+                        <span class="hidden sm:inline-block text-xs text-slate-400 dark:text-slate-500 ml-2 border-l border-slate-300 dark:border-slate-700 pl-2">Alex & Sam's Household</span>
+                    </div>
+                </div>
+
+                <!-- Center Nav / View Switcher -->
+                <div class="hidden md:flex items-center space-x-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+                    <button id="nav-dashboard" onclick="switchMainTab('dashboard')" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm">
+                        <i class="fa-solid fa-chart-pie mr-1.5"></i> Dashboard
+                    </button>
+                    <button id="nav-calendar" onclick="switchMainTab('calendar')" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900">
+                        <i class="fa-solid fa-calendar-days mr-1.5"></i> Calendar View
+                    </button>
+                    <button id="nav-settle" onclick="switchMainTab('settle')" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900">
+                        <i class="fa-solid fa-hand-holding-dollar mr-1.5"></i> Settle Up
+                    </button>
+                </div>
+
+                <!-- Right Action Icons & Partner Switcher -->
+                <div class="flex items-center space-x-3">
+                    <!-- Notifications Trigger -->
+                    <button onclick="toggleNotificationDrawer()" class="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span id="notif-badge-count" class="hidden absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+
+                    <!-- Start Monthly Review Button -->
+                    <button onclick="openMonthlyReviewModal()" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg transition">
+                        <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                        <span>New Month Review</span>
+                    </button>
+
+                    <!-- Add Bill Primary Button -->
+                    <button onclick="openBillModal()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm shadow-blue-500/30 flex items-center space-x-1.5 transition-colors">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Add Bill</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Urgent Today / Tomorrow Notification Banner -->
+    <div id="urgent-alert-banner" class="hidden bg-amber-500/10 border-b border-amber-500/20 py-2.5 px-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between text-xs sm:text-sm">
+            <div class="flex items-center space-x-2 text-amber-700 dark:text-amber-300 font-medium overflow-hidden">
+                <span class="flex h-2 w-2 relative">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 dark:text-amber-400"></i>
+                <span id="urgent-alert-text" class="truncate">You have pending bills due today or tomorrow!</span>
+            </div>
+            <button onclick="filterByUrgent()" class="text-xs text-amber-700 dark:text-amber-300 underline font-semibold hover:text-amber-800 ml-3 whitespace-nowrap">
+                View Urgent Bills &rarr;
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Controls Bar: Partner Filter Switcher & Category Search -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <!-- Partner Filter Switcher Tabs -->
+            <div class="inline-flex p-1 bg-slate-200/80 dark:bg-slate-800 rounded-xl max-w-md">
+                <button id="filter-partner-all" onclick="setPartnerFilter('all')" class="px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm">
+                    <i class="fa-solid fa-people-roof mr-1.5"></i> All Household
+                </button>
+                <button id="filter-partner-alex" onclick="setPartnerFilter('Alex')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1.5"></span> Alex's Bills
+                </button>
+                <button id="filter-partner-sam" onclick="setPartnerFilter('Sam')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span> Sam's Bills
+                </button>
+                <button id="filter-partner-shared" onclick="setPartnerFilter('Shared')" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:text-slate-900 transition-all flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span> Shared Split
+                </button>
+            </div>
+
+            <!-- Search, Status & Category Filters -->
+            <div class="flex items-center space-x-2 overflow-x-auto pb-1 md:pb-0">
+                <div class="relative min-w-[160px] sm:min-w-[200px]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Search bill name..." class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <select id="status-filter" onchange="applyFilters()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-300">
+                    <option value="all">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="due_soon">Due Soon (2 Days)</option>
+                </select>
+
+                <select id="category-filter" onchange="applyFilters()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-300">
+                    <option value="all">All Categories</option>
+                    <option value="Rent/Mortgage">Rent & Housing</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Internet/Phone">Internet & Phone</option>
+                    <option value="Insurance">Insurance</option>
+                    <option value="Credit Card">Credit Cards</option>
+                    <option value="Subscriptions">Subscriptions</option>
+                    <option value="Auto">Auto Loans</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Dashboard Summary Stats Cards -->
+        <div id="dashboard-tab" class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Total Household Monthly -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Total Monthly</span>
+                        <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                    </div>
+                    <div id="stat-total-amount" class="text-2xl font-black text-slate-900 dark:text-white">$0.00</div>
+                    <div class="flex items-center justify-between text-xs text-slate-500 mt-2">
+                        <span id="stat-bill-count">0 bills tracked</span>
+                        <span id="partner-filter-indicator" class="font-medium text-blue-600 dark:text-blue-400">All View</span>
+                    </div>
+                </div>
+
+                <!-- Total Paid Amount -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Paid So Far</span>
+                        <div class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                    </div>
+                    <div id="stat-paid-amount" class="text-2xl font-black text-emerald-600 dark:text-emerald-400">$0.00</div>
+                    <!-- Progress bar -->
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="stat-paid-progress" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Upcoming / Due Pending -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Pending Due</span>
+                        <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                    </div>
+                    <div id="stat-pending-amount" class="text-2xl font-black text-amber-600 dark:text-amber-400">$0.00</div>
+                    <div class="text-xs text-slate-500 mt-2 flex justify-between">
+                        <span id="stat-due-today-count">0 due today/tomorrow</span>
+                    </div>
+                </div>
+
+                <!-- Overdue Amount -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Overdue</span>
+                        <div class="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                        </div>
+                    </div>
+                    <div id="stat-overdue-amount" class="text-2xl font-black text-red-600 dark:text-red-400">$0.00</div>
+                    <div class="text-xs text-slate-500 mt-2">
+                        <span id="stat-overdue-count">0 bills overdue</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Partner Contribution Quick Bar -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-3 w-full md:w-auto">
+                    <div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                        <i class="fa-solid fa-user-group text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold">Partner Monthly Split Breakdown</h4>
+                        <p class="text-xs text-slate-500">Alex vs Sam vs Shared Expenses</p>
+                    </div>
+                </div>
+                <!-- Mini Progress Breakdown -->
+                <div class="w-full md:w-1/2 flex flex-col gap-1.5">
+                    <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        <span class="text-blue-600 dark:text-blue-400">Alex: <span id="split-alex-val">$0</span></span>
+                        <span class="text-purple-600 dark:text-purple-400">Sam: <span id="split-sam-val">$0</span></span>
+                        <span class="text-emerald-600 dark:text-emerald-400">Shared: <span id="split-shared-val">$0</span></span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full flex overflow-hidden">
+                        <div id="split-bar-alex" class="bg-blue-500 h-full" style="width: 33%"></div>
+                        <div id="split-bar-sam" class="bg-purple-500 h-full" style="width: 33%"></div>
+                        <div id="split-bar-shared" class="bg-emerald-500 h-full" style="width: 34%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Interactive Bills Table Container -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800/50">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center">
+                        <i class="fa-solid fa-list-check text-blue-600 dark:text-blue-400 mr-2"></i> Household Monthly Bills
+                    </h3>
+                    <div class="flex items-center space-x-2 text-xs">
+                        <span class="text-slate-500">Sort by:</span>
+                        <select id="sort-select" onchange="renderBillsList()" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:outline-none text-xs font-medium">
+                            <option value="dueDay-asc">Due Date (Earliest First)</option>
+                            <option value="dueDay-desc">Due Date (Latest First)</option>
+                            <option value="amount-desc">Amount (High to Low)</option>
+                            <option value="amount-asc">Amount (Low to High)</option>
+                            <option value="title">Bill Name</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Desktop Table View -->
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead class="bg-slate-50 dark:bg-slate-700/40 text-slate-500 dark:text-slate-400 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-200 dark:border-slate-700">
+                            <tr>
+                                <th class="py-3 px-4">Status & Urgency</th>
+                                <th class="py-3 px-4">Bill Title & Category</th>
+                                <th class="py-3 px-4">Assigned To</th>
+                                <th class="py-3 px-4">Due Date</th>
+                                <th class="py-3 px-4 text-right">Balance / Amount</th>
+                                <th class="py-3 px-4 text-center">Auto-Pay</th>
+                                <th class="py-3 px-4 text-center">Quick Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bills-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/60 font-normal">
+                            <!-- Injected dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div id="bills-card-container" class="md:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                    <!-- Injected dynamically via JS for mobile -->
+                </div>
+
+                <!-- Empty State View -->
+                <div id="empty-state" class="hidden p-8 text-center">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto text-slate-400 mb-3">
+                        <i class="fa-solid fa-receipt text-xl"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 text-sm">No bills match your current filter</h4>
+                    <p class="text-xs text-slate-400 mt-1">Try resetting your search query or add a new bill to track.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar View Tab -->
+        <div id="calendar-tab" class="hidden space-y-4">
+            <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 id="calendar-month-title" class="text-lg font-bold text-slate-900 dark:text-white">Current Month Due Dates</h2>
+                        <p class="text-xs text-slate-500">Visual overview of bill due dates across the calendar month</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center text-xs text-slate-600 dark:text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-red-500 mr-1"></span> Pending</span>
+                        <span class="inline-flex items-center text-xs text-slate-600 dark:text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span> Paid</span>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid Container -->
+                <div class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs font-semibold uppercase text-slate-400 mb-2">
+                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                </div>
+                <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 sm:gap-2">
+                    <!-- Injected via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settle Up & Household Analytics Tab -->
+        <div id="settle-tab" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Settlement Calculation Card -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-scale-balanced text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 dark:text-white">Shared Bill Settle Up</h3>
+                            <p class="text-xs text-slate-500">Calculates payments made for shared bills to balance out expenses</p>
+                        </div>
+                    </div>
+
+                    <div id="settlement-summary-box" class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3 mb-4">
+                        <!-- Dynamic Calculation Injection -->
+                    </div>
+
+                    <div class="text-xs text-slate-500 space-y-2">
+                        <p><i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> How this is calculated: Shared split bills are split 50/50. Individual partner bills belong 100% to that partner.</p>
+                    </div>
+                </div>
+
+                <!-- Spending Chart Card -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white mb-2">Category Spending Distribution</h3>
+                    <p class="text-xs text-slate-500 mb-4">Breakdown of household expenses by category</p>
+                    <div class="relative h-64 w-full flex items-center justify-center">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Bill Modal -->
+    <div id="bill-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+                <h3 id="modal-title" class="font-bold text-slate-900 dark:text-white text-base">Add New Bill</h3>
+                <button onclick="closeBillModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="bill-form" onsubmit="handleSaveBill(event)" class="p-6 space-y-4">
+                <input type="hidden" id="bill-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Bill Name / Provider *</label>
+                    <input type="text" id="bill-title" required placeholder="e.g. Electric Company, Netflix, Rent" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Assigned Partner *</label>
+                        <select id="bill-partner" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Alex">Alex</option>
+                            <option value="Sam">Sam</option>
+                            <option value="Shared">Shared 50/50 Split</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Category *</label>
+                        <select id="bill-category" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Rent/Mortgage">Rent & Housing</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Internet/Phone">Internet & Phone</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Credit Card">Credit Cards</option>
+                            <option value="Subscriptions">Subscriptions</option>
+                            <option value="Auto">Auto Loan/Transport</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Balance / Amount ($) *</label>
+                        <input type="number" step="0.01" min="0" id="bill-amount" required placeholder="0.00" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Due Day of Month *</label>
+                        <input type="number" min="1" max="31" id="bill-due-day" required placeholder="1 - 31" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3 pt-2">
+                    <input type="checkbox" id="bill-autopay" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                    <label for="bill-autopay" class="text-xs text-slate-700 dark:text-slate-300 font-medium">Auto-Pay Enabled (Will pay automatically on due date)</label>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Account Notes / Confirmation #</label>
+                    <textarea id="bill-notes" rows="2" placeholder="e.g. Acct #98421, paid via Chase online" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <button type="button" onclick="closeBillModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">Cancel</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm shadow-blue-500/30 transition">Save Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Beginning of Month Setup Prompt Modal -->
+    <div id="monthly-review-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+                        <i class="fa-solid fa-calendar-check text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">Beginning of the Month Review</h3>
+                        <p class="text-xs text-blue-100">Review balances and reset paid statuses for all recurring monthly household bills.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto" id="monthly-review-list">
+                <!-- Injected via JavaScript -->
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <span class="text-xs text-slate-500">This will mark selected bills as pending for the new month.</span>
+                <div class="space-x-2">
+                    <button onclick="closeMonthlyReviewModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg">Skip</button>
+                    <button onclick="confirmMonthlyReset()" class="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-500/30">Start New Month</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Drawer -->
+    <div id="notification-drawer" class="fixed inset-y-0 right-0 w-80 sm:w-96 bg-white dark:bg-slate-800 shadow-2xl border-l border-slate-200 dark:border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+            <h3 class="font-bold text-slate-900 dark:text-white flex items-center">
+                <i class="fa-solid fa-bell text-amber-500 mr-2"></i> Household Alerts
+            </h3>
+            <button onclick="toggleNotificationDrawer()" class="text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <div id="notif-drawer-content" class="p-4 space-y-3 flex-1 overflow-y-auto">
+            <!-- Notifications list injected via JS -->
+        </div>
+    </div>
+
+    <script>
+        // Default Mock Data for Household Bills
+        const DEFAULT_BILLS = [
+            {
+                id: 'bill-1',
+                title: 'Apartment Rent',
+                partner: 'Shared',
+                category: 'Rent/Mortgage',
+                amount: 2400.00,
+                dueDay: 1,
+                paid: true,
+                paidTimestamp: '2026-10-01 09:30 AM',
+                autoPay: false,
+                notes: 'split 50/50 via Zelle'
+            },
+            {
+                id: 'bill-2',
+                title: 'Electric & Power Co',
+                partner: 'Alex',
+                category: 'Utilities',
+                amount: 145.50,
+                dueDay: 2, // Due Today in mock scenario
+                paid: false,
+                paidTimestamp: null,
+                autoPay: true,
+                notes: 'Auto-debit setup'
+            },
+            {
+                id: 'bill-3',
+                title: 'High-Speed Fiber Internet',
+                partner: 'Sam',
+                category: 'Internet/Phone',
+                amount: 85.00,
+                dueDay: 3, // Due Tomorrow
+                paid: false,
+                paidTimestamp: null,
+                autoPay: true,
+                notes: 'Xfinity internet'
+            },
+            {
+                id: 'bill-4',
+                title: 'Car Insurance (Both Vehicles)',
+                partner: 'Shared',
+                category: 'Insurance',
+                amount: 210.00,
+                dueDay: 12,
+                paid: false,
+                paidTimestamp: null,
+                autoPay: false,
+                notes: 'Geico Policy #8821'
+            },
+            {
+                id: 'bill-5',
+                title: 'Chase Sapphire Credit Card Min',
+                partner: 'Alex',
+                category: 'Credit Card',
+                amount: 150.00,
+                dueDay: 18,
+                paid: false,
+                paidTimestamp: null,
+                autoPay: false,
+                notes: 'Alex primary card'
+            },
+            {
+                id: 'bill-6',
+                title: 'Streaming Bundle (Netflix/Hulu)',
+                partner: 'Sam',
+                category: 'Subscriptions',
+                amount: 34.99,
+                dueDay: 25,
+                paid: false,
+                paidTimestamp: null,
+                autoPay: true,
+                notes: 'Charged to Sam AMEX'
+            }
+        ];
+
+        // Global State Variables
+        let bills = [];
+        let activePartnerFilter = 'all'; // 'all', 'Alex', 'Sam', 'Shared'
+        let currentTab = 'dashboard';
+        let categoryChartInstance = null;
+
+        // Current simulated date context for October 2026
+        const TODAY_DAY = 2; // Simulated current day of month (October 2nd)
+
+        // Initialize Application
+        window.onload = function() {
+            loadSavedBills();
+            checkFirstOfMonthPrompt();
+            renderAll();
+        };
+
+        // Load bills from LocalStorage or initialize default
+        function loadSavedBills() {
+            const stored = localStorage.getItem('duobills_data_v1');
+            if (stored) {
+                try {
+                    bills = JSON.parse(stored);
+                } catch(e) {
+                    bills = [...DEFAULT_BILLS];
+                }
+            } else {
+                bills = [...DEFAULT_BILLS];
+                saveBillsToStorage();
+            }
+        }
+
+        function saveBillsToStorage() {
+            localStorage.setItem('duobills_data_v1', JSON.stringify(bills));
+        }
+
+        // View Switcher: Dashboard, Calendar, Settle Up
+        function switchMainTab(tab) {
+            currentTab = tab;
+            document.getElementById('dashboard-tab').classList.toggle('hidden', tab !== 'dashboard');
+            document.getElementById('calendar-tab').classList.toggle('hidden', tab !== 'calendar');
+            document.getElementById('settle-tab').classList.toggle('hidden', tab !== 'settle');
+
+            // Style Tab Buttons
+            ['dashboard', 'calendar', 'settle'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tab) {
+                    btn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm";
+                } else {
+                    btn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900";
+                }
+            });
+
+            if (tab === 'calendar') renderCalendarView();
+            if (tab === 'settle') renderSettleUpAnalytics();
+        }
+
+        // Partner Filter Selection
+        function setPartnerFilter(partner) {
+            activePartnerFilter = partner;
+            ['all', 'alex', 'sam', 'shared'].forEach(p => {
+                const btn = document.getElementById(`filter-partner-${p}`);
+                if (p === partner.toLowerCase()) {
+                    btn.classList.add('bg-white', 'dark:bg-slate-700', 'text-blue-600', 'dark:text-blue-400', 'shadow-sm', 'font-bold');
+                    btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+                } else {
+                    btn.classList.remove('bg-white', 'dark:bg-slate-700', 'text-blue-600', 'dark:text-blue-400', 'shadow-sm', 'font-bold');
+                    btn.classList.add('text-slate-600', 'dark:text-slate-300');
+                }
+            });
+
+            document.getElementById('partner-filter-indicator').innerText = partner === 'all' ? 'All Household' : `${partner}'s Bills`;
+            renderAll();
+        }
+
+        function applyFilters() {
+            renderBillsList();
+        }
+
+        function filterByUrgent() {
+            document.getElementById('status-filter').value = 'due_soon';
+            setPartnerFilter('all');
+            switchMainTab('dashboard');
+            renderBillsList();
+        }
+
+        function renderAll() {
+            renderStatsAndAlerts();
+            renderBillsList();
+            if (currentTab === 'calendar') renderCalendarView();
+            if (currentTab === 'settle') renderSettleUpAnalytics();
+        }
+
+        function getFilteredBills() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const status = document.getElementById('status-filter').value;
+            const category = document.getElementById('category-filter').value;
+
+            return bills.filter(b => {
+                // Partner filter
+                if (activePartnerFilter !== 'all' && b.partner !== activePartnerFilter) return false;
+                
+                // Search query
+                if (search && !b.title.toLowerCase().includes(search)) return false;
+
+                // Category filter
+                if (category !== 'all' && b.category !== category) return false;
+
+                // Status filter
+                if (status === 'paid' && !b.paid) return false;
+                if (status === 'pending' && b.paid) return false;
+                if (status === 'overdue' && (b.paid || b.dueDay >= TODAY_DAY)) return false;
+                if (status === 'due_soon' && (b.paid || !(b.dueDay === TODAY_DAY || b.dueDay === TODAY_DAY + 1))) return false;
+
+                return true;
+            });
+        }
+
+        function renderStatsAndAlerts() {
+            const listToStat = activePartnerFilter === 'all' ? bills : bills.filter(b => b.partner === activePartnerFilter);
+            
+            let total = 0;
+            let paid = 0;
+            let pending = 0;
+            let overdue = 0;
+            let overdueCount = 0;
+            let urgentCount = 0;
+
+            let totalAlex = 0;
+            let totalSam = 0;
+            let totalShared = 0;
+
+            bills.forEach(b => {
+                if (b.partner === 'Alex') totalAlex += b.amount;
+                if (b.partner === 'Sam') totalSam += b.amount;
+                if (b.partner === 'Shared') totalShared += b.amount;
+            });
+
+            listToStat.forEach(b => {
+                total += b.amount;
+                if (b.paid) {
+                    paid += b.amount;
+                } else {
+                    pending += b.amount;
+                    if (b.dueDay < TODAY_DAY) {
+                        overdue += b.amount;
+                        overdueCount++;
+                    }
+                    if (b.dueDay === TODAY_DAY || b.dueDay === TODAY_DAY + 1) {
+                        urgentCount++;
+                    }
+                }
+            });
+
+            document.getElementById('stat-total-amount').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('stat-paid-amount').innerText = `$${paid.toFixed(2)}`;
+            document.getElementById('stat-pending-amount').innerText = `$${pending.toFixed(2)}`;
+            document.getElementById('stat-overdue-amount').innerText = `$${overdue.toFixed(2)}`;
+
+            document.getElementById('stat-bill-count').innerText = `${listToStat.length} bills tracked`;
+            document.getElementById('stat-overdue-count').innerText = `${overdueCount} bills overdue`;
+            document.getElementById('stat-due-today-count').innerText = `${urgentCount} due today/tomorrow`;
+
+            const paidPct = total > 0 ? (paid / total) * 100 : 0;
+            document.getElementById('stat-paid-progress').style.width = `${paidPct}%`;
+
+            // Partner breakdown calculation
+            const householdSum = totalAlex + totalSam + totalShared || 1;
+            document.getElementById('split-alex-val').innerText = `$${totalAlex.toFixed(0)}`;
+            document.getElementById('split-sam-val').innerText = `$${totalSam.toFixed(0)}`;
+            document.getElementById('split-shared-val').innerText = `$${totalShared.toFixed(0)}`;
+
+            document.getElementById('split-bar-alex').style.width = `${(totalAlex / householdSum) * 100}%`;
+            document.getElementById('split-bar-sam').style.width = `${(totalSam / householdSum) * 100}%`;
+            document.getElementById('split-bar-shared').style.width = `${(totalShared / householdSum) * 100}%`;
+
+            // Urgent Banner Alert Logic
+            const urgentBanner = document.getElementById('urgent-alert-banner');
+            const urgentAlertText = document.getElementById('urgent-alert-text');
+            
+            const urgentBills = bills.filter(b => !b.paid && (b.dueDay === TODAY_DAY || b.dueDay === TODAY_DAY + 1 || b.dueDay < TODAY_DAY));
+            
+            if (urgentBills.length > 0) {
+                urgentBanner.classList.remove('hidden');
+                urgentAlertText.innerText = `Attention: ${urgentBills.length} bill(s) require payment! (${urgentBills.map(b => b.title).join(', ')})`;
+            } else {
+                urgentBanner.classList.add('hidden');
+            }
+
+            renderNotificationsDrawer(urgentBills);
+        }
+
+        function renderBillsList() {
+            const tableBody = document.getElementById('bills-table-body');
+            const mobileContainer = document.getElementById('bills-card-container');
+            const emptyState = document.getElementById('empty-state');
+
+            let filtered = getFilteredBills();
+
+            // Apply Sorting
+            const sortVal = document.getElementById('sort-select').value;
+            filtered.sort((a, b) => {
+                if (sortVal === 'dueDay-asc') return a.dueDay - b.dueDay;
+                if (sortVal === 'dueDay-desc') return b.dueDay - a.dueDay;
+                if (sortVal === 'amount-desc') return b.amount - a.amount;
+                if (sortVal === 'amount-asc') return a.amount - b.amount;
+                if (sortVal === 'title') return a.title.localeCompare(b.title);
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                tableBody.innerHTML = '';
+                mobileContainer.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            // Render Desktop Table Rows
+            tableBody.innerHTML = filtered.map(bill => {
+                const badge = getStatusBadgeHTML(bill);
+                const partnerBadge = getPartnerBadgeHTML(bill.partner);
+
+                return `
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors">
+                        <td class="py-3 px-4">${badge}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-bold text-slate-900 dark:text-white">${escapeHtml(bill.title)}</div>
+                            <div class="text-xs text-slate-400 font-normal">${escapeHtml(bill.category)} ${bill.notes ? `• <span class="italic">${escapeHtml(bill.notes)}</span>` : ''}</div>
+                        </td>
+                        <td class="py-3 px-4">${partnerBadge}</td>
+                        <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
+                            Oct ${bill.dueDay}, 2026
+                        </td>
+                        <td class="py-3 px-4 text-right font-black text-slate-900 dark:text-white">
+                            $${bill.amount.toFixed(2)}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            ${bill.autoPay ? '<span class="inline-flex items-center text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full"><i class="fa-solid fa-bolt mr-1"></i> Auto</span>' : '<span class="text-slate-400 text-xs">Manual</span>'}
+                        </td>
+                        <td class="py-3 px-4 text-center space-x-1">
+                            <button onclick="togglePaid('${bill.id}')" title="${bill.paid ? 'Mark as Unpaid' : 'Mark as Paid'}" class="p-1.5 rounded-lg text-xs font-semibold transition ${bill.paid ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600'}">
+                                <i class="fa-solid ${bill.paid ? 'fa-circle-check text-emerald-600' : 'fa-check'} text-sm"></i>
+                            </button>
+                            <button onclick="openBillModal('${bill.id}')" title="Edit Bill" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteBill('${bill.id}')" title="Delete Bill" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Render Mobile Cards
+            mobileContainer.innerHTML = filtered.map(bill => {
+                const badge = getStatusBadgeHTML(bill);
+                const partnerBadge = getPartnerBadgeHTML(bill.partner);
+
+                return `
+                    <div class="p-4 space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                ${badge}
+                                <h4 class="font-bold text-slate-900 dark:text-white mt-1.5 text-base">${escapeHtml(bill.title)}</h4>
+                                <span class="text-xs text-slate-400">${bill.category}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-black text-slate-900 dark:text-white">$${bill.amount.toFixed(2)}</div>
+                                <div class="text-xs text-slate-400">Due Oct ${bill.dueDay}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-100 dark:border-slate-700/50">
+                            <div>Assignee: ${partnerBadge}</div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="togglePaid('${bill.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold ${bill.paid ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-blue-600 text-white shadow-sm'}">
+                                    ${bill.paid ? '<i class="fa-solid fa-check mr-1"></i> Paid' : 'Mark as Paid'}
+                                </button>
+                                <button onclick="openBillModal('${bill.id}')" class="p-1.5 text-slate-400 hover:text-slate-600">
+                                    <i class="fa-solid fa-pen-to-square text-sm"></i>
+                                </button>
+                                <button onclick="deleteBill('${bill.id}')" class="p-1.5 text-slate-400 hover:text-red-600">
+                                    <i class="fa-solid fa-trash text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Helper Badge Generators
+        function getStatusBadgeHTML(bill) {
+            if (bill.paid) {
+                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"><i class="fa-solid fa-check-double mr-1.5"></i> Paid</span>`;
+            }
+            if (bill.dueDay < TODAY_DAY) {
+                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 pulse-urgent"><i class="fa-solid fa-circle-exclamation mr-1.5"></i> Overdue</span>`;
+            }
+            if (bill.dueDay === TODAY_DAY) {
+                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white pulse-urgent"><i class="fa-solid fa-fire mr-1.5"></i> Due Today</span>`;
+            }
+            if (bill.dueDay === TODAY_DAY + 1) {
+                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"><i class="fa-solid fa-bell mr-1.5"></i> Due Tomorrow</span>`;
+            }
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"><i class="fa-regular fa-clock mr-1.5"></i> In ${bill.dueDay - TODAY_DAY} days</span>`;
+        }
+
+        function getPartnerBadgeHTML(partner) {
+            if (partner === 'Alex') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Alex</span>`;
+            }
+            if (partner === 'Sam') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>Sam</span>`;
+            }
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>Shared (50/50)</span>`;
+        }
+
+        function togglePaid(id) {
+            const bill = bills.find(b => b.id === id);
+            if (bill) {
+                bill.paid = !bill.paid;
+                bill.paidTimestamp = bill.paid ? new Date().toLocaleString() : null;
+                saveBillsToStorage();
+                renderAll();
+            }
+        }
+
+        function deleteBill(id) {
+            bills = bills.filter(b => b.id !== id);
+            saveBillsToStorage();
+            renderAll();
+        }
+
+        function openBillModal(id = null) {
+            const modal = document.getElementById('bill-modal');
+            const titleEl = document.getElementById('modal-title');
+            const form = document.getElementById('bill-form');
+
+            form.reset();
+            if (id) {
+                const bill = bills.find(b => b.id === id);
+                if (bill) {
+                    titleEl.innerText = 'Edit Bill';
+                    document.getElementById('bill-id').value = bill.id;
+                    document.getElementById('bill-title').value = bill.title;
+                    document.getElementById('bill-partner').value = bill.partner;
+                    document.getElementById('bill-category').value = bill.category;
+                    document.getElementById('bill-amount').value = bill.amount;
+                    document.getElementById('bill-due-day').value = bill.dueDay;
+                    document.getElementById('bill-autopay').checked = bill.autoPay;
+                    document.getElementById('bill-notes').value = bill.notes || '';
+                }
+            } else {
+                titleEl.innerText = 'Add New Bill';
+                document.getElementById('bill-id').value = '';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeBillModal() {
+            document.getElementById('bill-modal').classList.add('hidden');
+        }
+
+        function handleSaveBill(e) {
+            e.preventDefault();
+            const id = document.getElementById('bill-id').value;
+            const title = document.getElementById('bill-title').value;
+            const partner = document.getElementById('bill-partner').value;
+            const category = document.getElementById('bill-category').value;
+            const amount = parseFloat(document.getElementById('bill-amount').value);
+            const dueDay = parseInt(document.getElementById('bill-due-day').value);
+            const autoPay = document.getElementById('bill-autopay').checked;
+            const notes = document.getElementById('bill-notes').value;
+
+            if (id) {
+                // Update Existing
+                const bill = bills.find(b => b.id === id);
+                if (bill) {
+                    bill.title = title;
+                    bill.partner = partner;
+                    bill.category = category;
+                    bill.amount = amount;
+                    bill.dueDay = dueDay;
+                    bill.autoPay = autoPay;
+                    bill.notes = notes;
+                }
+            } else {
+                // Create New Bill
+                const newBill = {
+                    id: 'bill-' + Date.now(),
+                    title,
+                    partner,
+                    category,
+                    amount,
+                    dueDay,
+                    paid: false,
+                    paidTimestamp: null,
+                    autoPay,
+                    notes
+                };
+                bills.push(newBill);
+            }
+
+            saveBillsToStorage();
+            closeBillModal();
+            renderAll();
+        }
+
+        function checkFirstOfMonthPrompt() {
+            // Auto open prompt if explicitly requested or on month change simulation
+        }
+
+        function openMonthlyReviewModal() {
+            const listEl = document.getElementById('monthly-review-list');
+            listEl.innerHTML = bills.map(b => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="review-check-${b.id}" checked class="w-4 h-4 text-indigo-600 rounded">
+                        <div>
+                            <div class="font-bold text-sm text-slate-900 dark:text-white">${escapeHtml(b.title)}</div>
+                            <div class="text-xs text-slate-400">Due day: ${b.dueDay}th • ${b.partner}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400">$</span>
+                        <input type="number" id="review-amount-${b.id}" value="${b.amount.toFixed(2)}" step="0.01" class="w-24 px-2 py-1 text-xs bg-white dark:bg-slate-800 border rounded text-right font-bold">
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('monthly-review-modal').classList.remove('hidden');
+        }
+
+        function closeMonthlyReviewModal() {
+            document.getElementById('monthly-review-modal').classList.add('hidden');
+        }
+
+        function confirmMonthlyReset() {
+            bills.forEach(b => {
+                const check = document.getElementById(`review-check-${b.id}`);
+                const amountInput = document.getElementById(`review-amount-${b.id}`);
+                if (check && check.checked) {
+                    b.paid = false;
+                    b.paidTimestamp = null;
+                    if (amountInput) b.amount = parseFloat(amountInput.value) || b.amount;
+                }
+            });
+            saveBillsToStorage();
+            closeMonthlyReviewModal();
+            renderAll();
+        }
+
+        function renderCalendarView() {
+            const grid = document.getElementById('calendar-days-grid');
+            grid.innerHTML = '';
+
+            // Generate 31 days for current month view
+            for (let day = 1; day <= 31; day++) {
+                const dayBills = bills.filter(b => b.dueDay === day && (activePartnerFilter === 'all' || b.partner === activePartnerFilter));
+                const isToday = day === TODAY_DAY;
+
+                let cellClass = "min-h-[70px] sm:min-h-[85px] p-1.5 border rounded-xl flex flex-col justify-between transition bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/80";
+                if (isToday) cellClass += " ring-2 ring-blue-500 bg-blue-50/20 dark:bg-blue-900/10";
+
+                grid.innerHTML += `
+                    <div class="${cellClass}">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}">${day}</span>
+                            ${isToday ? '<span class="text-[9px] bg-blue-600 text-white font-bold px-1 rounded">Today</span>' : ''}
+                        </div>
+                        <div class="space-y-1 my-1 overflow-y-auto max-h-12">
+                            ${dayBills.map(b => `
+                                <div onclick="openBillModal('${b.id}')" title="${b.title} - $${b.amount}" class="truncate text-[10px] font-semibold px-1 py-0.5 rounded cursor-pointer ${b.paid ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'}">
+                                    ${b.title} ($${b.amount.toFixed(0)})
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderSettleUpAnalytics() {
+            // Settle up calculations for shared expenses paid so far
+            let alexPaidShared = 0;
+            let samPaidShared = 0;
+
+            bills.filter(b => b.partner === 'Shared' && b.paid).forEach(b => {
+                // In full setup, track paidBy user. Here we estimate half/half setup or Alex paid electric
+                alexPaidShared += b.amount / 2;
+                samPaidShared += b.amount / 2;
+            });
+
+            const box = document.getElementById('settlement-summary-box');
+            box.innerHTML = `
+                <div class="flex items-center justify-between text-sm pb-2 border-b border-slate-200 dark:border-slate-600">
+                    <span class="font-medium text-slate-600 dark:text-slate-300">Total Shared Bills Paid:</span>
+                    <span class="font-bold text-slate-900 dark:text-white">$${(alexPaidShared + samPaidShared).toFixed(2)}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs pt-1 text-slate-500">
+                    <span>Alex's 50% Share: <strong>$${alexPaidShared.toFixed(2)}</strong></span>
+                    <span>Sam's 50% Share: <strong>$${samPaidShared.toFixed(2)}</strong></span>
+                </div>
+                <div class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-200 text-xs font-bold text-center">
+                    <i class="fa-solid fa-circle-check mr-1"></i> Household expenses are currently balanced equal!
+                </div>
+            `;
+
+            // Chart Rendering
+            renderCategoryChart();
+        }
+
+        function renderCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            const categorySums = {};
+            bills.forEach(b => {
+                categorySums[b.category] = (categorySums[b.category] || 0) + b.amount;
+            });
+
+            const labels = Object.keys(categorySums);
+            const data = Object.values(categorySums);
+
+            if (categoryChartInstance) {
+                categoryChartInstance.destroy();
+            }
+
+            categoryChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleNotificationDrawer() {
+            const drawer = document.getElementById('notification-drawer');
+            drawer.classList.toggle('translate-x-full');
+        }
+
+        function renderNotificationsDrawer(urgentBills) {
+            const content = document.getElementById('notif-drawer-content');
+            const badge = document.getElementById('notif-badge-count');
+
+            if (urgentBills.length > 0) {
+                badge.innerText = urgentBills.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            if (urgentBills.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i class="fa-solid fa-bell-slash text-2xl mb-2"></i>
+                        <p>No urgent bill reminders at this time!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            content.innerHTML = urgentBills.map(b => `
+                <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 space-y-1">
+                    <div class="flex justify-between items-start">
+                        <h5 class="font-bold text-xs text-slate-900 dark:text-white">${escapeHtml(b.title)}</h5>
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">$${b.amount.toFixed(2)}</span>
+                    </div>
+                    <p class="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                        <i class="fa-solid fa-clock mr-1"></i> Due Day: Oct ${b.dueDay} (${b.partner})
+                    </p>
+                    <button onclick="togglePaid('${b.id}'); toggleNotificationDrawer();" class="mt-2 w-full py-1 text-[11px] bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition">
+                        Mark as Paid Now
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Utility Helper
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
