@@ -867,24 +867,44 @@
             }
         }
 
-     let billIdToDelete = null;
+  let billIdToDelete = null;
 
 function deleteBill(id) {
     const bill = bills.find(b => b.id === id);
     const title = bill ? bill.title : 'this bill';
     
     billIdToDelete = id;
-    document.getElementById('delete-modal-text').innerText = `Are you sure you want to delete "${title}"?`;
     
-    document.getElementById('confirm-delete-btn').onclick = function() {
-       if (billIdToDelete) {
-            bills = bills.filter(b => b.id !== billIdToDelete);
-            db.child(billIdToDelete).remove();
-            billIdToDelete = null;
-            renderBillsList();
-        }
-        closeDeleteModal();
-    };
+    const textEl = document.getElementById('delete-modal-text');
+    if (textEl) textEl.innerText = `Are you sure you want to delete "${title}"?`;
+    
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    if (confirmBtn) {
+        confirmBtn.onclick = function() {
+            if (billIdToDelete) {
+                // 1. Remove locally from array
+                bills = bills.filter(b => b.id !== billIdToDelete);
+                
+                // 2. Remove directly from Firebase
+                db.child(billIdToDelete).remove();
+                
+                // 3. Reset variable & refresh entire UI
+                billIdToDelete = null;
+                renderAll();
+            }
+            closeDeleteModal();
+        };
+    }
+    
+    const modalEl = document.getElementById('delete-modal');
+    if (modalEl) modalEl.classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    const modalEl = document.getElementById('delete-modal');
+    if (modalEl) modalEl.classList.add('hidden');
+    billIdToDelete = null;
+}
     
     document.getElementById('delete-modal').classList.remove('hidden');
 }
