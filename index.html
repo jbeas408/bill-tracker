@@ -882,13 +882,28 @@
                 titleEl.innerText = 'Add New Bill';
                 document.getElementById('bill-id').value = '';
             }
-            modal.classList.remove('hidden');
-        }
+   modal.classList.remove('hidden');
+    }
+}
 
-        function closeBillModal() {
-            document.getElementById('bill-modal').classList.add('hidden');
-        }
+function closeBillModal() {
+    document.getElementById('bill-modal').classList.add('hidden');
+}
 
+function formatDueDate(bill) {
+    if (bill.dueDate) {
+        // Formats YYYY-MM-DD into "Oct 15, 2026"
+        const [year, month, day] = bill.dueDate.split('-');
+        const dateObj = new Date(year, month - 1, day);
+        return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } else if (bill.dueDay) {
+        // Fallback for older bills where only day number exists
+        const now = new Date();
+        const dateObj = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
+        return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    return 'N/A';
+}       
         function handleSaveBill(e) {
             e.preventDefault();
             const id = document.getElementById('bill-id').value;
