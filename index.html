@@ -580,21 +580,14 @@
         const TODAY_DAY = new Date().getDate(); 
 
         // Listen for Realtime Firebase Database Updates
-        window.onload = function() {
-            db.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    bills = Object.values(data);
-                } else {
-                    // Seed database with starter data if empty
-                    const initialMap = {};
-                    DEFAULT_BILLS.forEach(b => { initialMap[b.id] = b; });
-                    db.set(initialMap);
-                    bills = [...DEFAULT_BILLS];
-                }
-                renderAll();
-            });
-        };
+       window.onload = function() {
+    db.on('value', (snapshot) => {
+        const data = snapshot.val();
+        // If data exists, use it. If completely empty, set bills to empty array [].
+        bills = data ? Object.values(data) : [];
+        renderAll();
+    });
+};
 
         function saveBillsToCloud() {
             const billsMap = {};
