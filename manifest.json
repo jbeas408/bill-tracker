@@ -1,0 +1,15 @@
+{
+  "name": "DuoBills Manager",
+  "short_name": "DuoBills",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "https://github.com/jbeas408/bill-tracker/blob/main/Code_Generated_Image.png?raw=true",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
