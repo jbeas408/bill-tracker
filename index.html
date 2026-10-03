@@ -832,9 +832,15 @@
      let billIdToDelete = null;
 
 function deleteBill(id) {
-    const bill = bills.find(b => b.id === id);
-    const title = bill ? bill.title : 'this bill';
+    // 1. Remove the bill from local array
+    bills = bills.filter(b => b.id !== id);
     
+    // 2. Overwrite cloud database with updated list
+    saveBillsToCloud();
+    
+    // 3. Immediately refresh UI
+    renderAll();
+}   
     billIdToDelete = id;
     document.getElementById('delete-modal-text').innerText = `Are you sure you want to delete "${title}"?`;
     
