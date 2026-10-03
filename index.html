@@ -432,10 +432,11 @@
                         <input type="number" step="0.01" min="0" id="bill-amount" required placeholder="0.00" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
-                   <div>
-                       <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Due Date *</label>
-                       <input type="date" id="bill-due-date" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Due Date *</label>
+                        <input type="date" id="bill-due-date" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
 
                 <div class="flex items-center space-x-3 pt-2">
                     <input type="checkbox" id="bill-autopay" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
@@ -454,23 +455,6 @@
             </form>
         </div>
     </div>
-    
-    <!-- Custom Delete Confirmation Modal -->
-<div id="delete-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 text-center space-y-4">
-        <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto text-xl">
-            <i class="fa-solid fa-trash-can"></i>
-        </div>
-        <div>
-            <h3 class="font-bold text-slate-900 dark:text-white text-base">Delete Bill?</h3>
-            <p id="delete-modal-text" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Are you sure you want to delete this bill?</p>
-        </div>
-        <div class="flex space-x-3 pt-2">
-            <button onclick="closeDeleteModal()" class="w-1/2 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">Cancel</button>
-            <button id="confirm-delete-btn" class="w-1/2 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition">Delete</button>
-        </div>
-    </div>
-</div>
 
     <!-- Beginning of Month Setup Prompt Modal -->
     <div id="monthly-review-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -521,46 +505,18 @@
         // FIREBASE INITIALIZATION - REPLACE WITH YOUR FIREBASE CONFIG
         // -------------------------------------------------------------
         const firebaseConfig = {
-            apiKey: "AIzaSyB5rjhYtdjdJgnVkpg0gEu-er1gVRNVohc",
-            authDomain: "duobills-8e986.firebaseapp.com",
-            databaseURL: "https://duobills-8e986-default-rtdb.firebaseio.com",
-            projectId: "duobills-8e986",
-            storageBucket: "duobills-8e986.firebasestorage.app",
-            messagingSenderId: "703824119542",
-            appId: "1:703824119542:web:74e9caab089e8ad8dfced7"
+            apiKey: "",
+            authDomain: "",
+            databaseURL: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
         };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('household_bills');
-
-        // Default Starter Data (Used if database is completely empty)
-        const DEFAULT_BILLS = [
-            {
-                id: 'bill-1',
-                title: 'House Rent',
-                partner: 'Shared',
-                category: 'Rent/Mortgage',
-                amount: 4000.00,
-                dueDay: 1,
-                paid: false,
-                paidTimestamp: null,
-                autoPay: false,
-                notes: 'Live check delivered to Jose'
-            },
-            {
-                id: 'bill-2',
-                title: 'Spectrum',
-                partner: 'Jason',
-                category: 'Internet/Phone',
-                amount: 50.00,
-                dueDay: 10,
-                paid: false,
-                paidTimestamp: null,
-                autoPay: true,
-                notes: 'Monthly internet payment'
-            }
-        ];
 
         // Global State Variables
         let bills = [];
@@ -572,14 +528,13 @@
         const TODAY_DAY = new Date().getDate(); 
 
         // Listen for Realtime Firebase Database Updates
-       window.onload = function() {
-    db.on('value', (snapshot) => {
-        const data = snapshot.val();
-        // If data exists, use it. If completely empty, set bills to empty array [].
-        bills = data ? Object.values(data) : [];
-        renderAll();
-    });
-};
+        window.onload = function() {
+            db.on('value', (snapshot) => {
+                const data = snapshot.val();
+                bills = data ? Object.values(data) : [];
+                renderAll();
+            });
+        };
 
         function saveBillsToCloud() {
             const billsMap = {};
@@ -787,9 +742,9 @@
                             <button onclick="openBillModal('${bill.id}')" title="Edit Bill" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </button>
-                           <button onclick="event.stopPropagation(); deleteBill('${bill.id}')" title="Delete Bill" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                           <i class="fa-solid fa-trash pointer-events-none"></i>
-                           </button>
+                            <button onclick="deleteBill('${bill.id}')" title="Delete Bill" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -822,8 +777,8 @@
                                 <button onclick="openBillModal('${bill.id}')" class="p-1.5 text-slate-400 hover:text-slate-600">
                                     <i class="fa-solid fa-pen-to-square text-sm"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); deleteBill('${bill.id}')" class="p-1.5 text-slate-400 hover:text-red-600">
-                                <i class="fa-solid fa-trash text-sm pointer-events-none"></i>
+                                <button onclick="deleteBill('${bill.id}')" class="p-1.5 text-slate-400 hover:text-red-600">
+                                    <i class="fa-solid fa-trash text-sm"></i>
                                 </button>
                             </div>
                         </div>
@@ -867,102 +822,60 @@
             }
         }
 
-  let billIdToDelete = null;
-
-function deleteBill(id) {
-    const bill = bills.find(b => b.id === id);
-    const title = bill ? bill.title : 'this bill';
-    
-    billIdToDelete = id;
-    
-    const textEl = document.getElementById('delete-modal-text');
-    if (textEl) textEl.innerText = `Are you sure you want to delete "${title}"?`;
-    
-    const confirmBtn = document.getElementById('confirm-delete-btn');
-    if (confirmBtn) {
-        confirmBtn.onclick = function() {
-            if (billIdToDelete) {
-                // 1. Remove locally from array
-                bills = bills.filter(b => b.id !== billIdToDelete);
-                
-                // 2. Remove directly from Firebase
-                db.child(billIdToDelete).remove();
-                
-                // 3. Reset variable & refresh entire UI
-                billIdToDelete = null;
-                renderAll();
-            }
-            closeDeleteModal();
-        };
-    }
-    
-    const modalEl = document.getElementById('delete-modal');
-    if (modalEl) modalEl.classList.remove('hidden');
-}
-
-function closeDeleteModal() {
-    const modalEl = document.getElementById('delete-modal');
-    if (modalEl) modalEl.classList.add('hidden');
-    billIdToDelete = null;
-}
-    
-    document.getElementById('delete-modal').classList.remove('hidden');
-}
-
-function closeDeleteModal() {
-    document.getElementById('delete-modal').classList.add('hidden');
-    billIdToDelete = null;
-
-}
-
-   function openBillModal(id = null) {
-    billIdToDelete = null;
-    closeDeleteModal();
-
-    const modal = document.getElementById('bill-modal');
-    const titleEl = document.getElementById('modal-title');
-    const form = document.getElementById('bill-form');
-
-    form.reset();
-    if (id) {
-        const bill = bills.find(b => b.id === id);
-        if (bill) {
-            titleEl.innerText = 'Edit Bill';
-            document.getElementById('bill-id').value = bill.id;
-            document.getElementById('bill-title').value = bill.title;
-            document.getElementById('bill-partner').value = bill.partner;
-            document.getElementById('bill-category').value = bill.category;
-            document.getElementById('bill-amount').value = bill.amount;
-            
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(bill.dueDay).padStart(2, '0');
-            document.getElementById('bill-due-date').value = `${year}-${month}-${day}`;
-            document.getElementById('bill-autopay').checked = bill.autoPay;
-            document.getElementById('bill-notes').value = bill.notes || '';
+        // Direct deletion without popup modals
+        function deleteBill(id) {
+            bills = bills.filter(b => b.id !== id);
+            db.child(id).remove();
+            renderAll();
         }
-    } else {
-        titleEl.innerText = 'Add New Bill';
-        document.getElementById('bill-id').value = '';
-    }
-    modal.classList.remove('hidden');
-}
+
+        function openBillModal(id = null) {
+            const modal = document.getElementById('bill-modal');
+            const titleEl = document.getElementById('modal-title');
+            const form = document.getElementById('bill-form');
+
+            form.reset();
+            if (id) {
+                const bill = bills.find(b => b.id === id);
+                if (bill) {
+                    titleEl.innerText = 'Edit Bill';
+                    document.getElementById('bill-id').value = bill.id;
+                    document.getElementById('bill-title').value = bill.title;
+                    document.getElementById('bill-partner').value = bill.partner;
+                    document.getElementById('bill-category').value = bill.category;
+                    document.getElementById('bill-amount').value = bill.amount;
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(bill.dueDay).padStart(2, '0');
+                    document.getElementById('bill-due-date').value = `${year}-${month}-${day}`;
+                    document.getElementById('bill-autopay').checked = bill.autoPay;
+                    document.getElementById('bill-notes').value = bill.notes || '';
+                }
+            } else {
+                titleEl.innerText = 'Add New Bill';
+                document.getElementById('bill-id').value = '';
+            }
+            modal.classList.remove('hidden');
+        }
+
         function closeBillModal() {
             document.getElementById('bill-modal').classList.add('hidden');
         }
+
         function formatDueDate(bill) {
-    if (bill.dueDate) {
-        const [year, month, day] = bill.dueDate.split('-');
-        const dateObj = new Date(year, month - 1, day);
-        return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } else if (bill.dueDay) {
-        const now = new Date();
-        const dateObj = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
-        return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-    return 'N/A';
-}
+            if (bill.dueDate) {
+                const [year, month, day] = bill.dueDate.split('-');
+                const dateObj = new Date(year, month - 1, day);
+                return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } else if (bill.dueDay) {
+                const now = new Date();
+                const dateObj = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
+                return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            return 'N/A';
+        }
+
         function handleSaveBill(e) {
             e.preventDefault();
             const id = document.getElementById('bill-id').value;
